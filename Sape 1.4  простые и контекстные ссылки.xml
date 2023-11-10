@@ -1,0 +1,262 @@
+<?xml version="1.0" encoding="utf-8"?>
+<dleplugin>
+	<name>Sape</name>
+	<description></description>
+	<icon></icon>
+	<version>1.4</version>
+	<dleversion>14</dleversion>
+	<versioncompare>greater</versioncompare>
+	<upgradeurl></upgradeurl>
+	<filedelete>0</filedelete>
+	<needplugin></needplugin>
+	<mnotice>0</mnotice>
+	<mysqlinstall><![CDATA[]]></mysqlinstall>
+	<mysqlupgrade><![CDATA[]]></mysqlupgrade>
+	<mysqlenable><![CDATA[INSERT INTO `{prefix}_admin_sections` (`name`, `title`, `descr`, `icon`, `allow_groups`) VALUES ('sape', 'Sape', 'Ссылки Sape', '', '1');]]></mysqlenable>
+	<mysqldisable><![CDATA[DELETE FROM `{prefix}_admin_sections` WHERE name='sape';]]></mysqldisable>
+	<mysqldelete><![CDATA[DELETE FROM `{prefix}_admin_sections` WHERE name='sape';]]></mysqldelete>
+	<phpinstall><![CDATA[$sape_host = $_SERVER['HTTP_HOST'];
+$sape_host = preg_replace('/^www\./', '', $sape_host);
+
+$config_sape = <<< EOT
+<?PHP 
+
+\$config_sape = array (
+
+'host' => '{$sape_host}',
+'charset' => 'utf-8',
+'user' => 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+'links' => '1',
+'context' => '1',
+'static' => '1',
+
+);
+
+?>
+EOT;
+
+$config_sape_file = ROOT_DIR . '/engine/data/config.seting.sape.php';
+$writing_sape = fopen($config_sape_file, 'w');
+fwrite($writing_sape, $config_sape);
+fclose($writing_sape);]]></phpinstall>
+	<phpupgrade><![CDATA[]]></phpupgrade>
+	<phpenable><![CDATA[]]></phpenable>
+	<phpdisable><![CDATA[]]></phpdisable>
+	<phpdelete><![CDATA[$config_sape_file = ROOT_DIR . '/engine/data/config.seting.sape.php';
+unlink($config_sape_file);]]></phpdelete>
+	<notice><![CDATA[]]></notice>
+	<file name="engine/inc/sape.php">
+		<operation action="create">
+			<replacecode><![CDATA[<?php
+
+echoheader('<i class="fa fa-lock position-left"></i><span class="text-semibold">Sape</span>', 'Sape');
+
+if (!isset($_GET['saved'])) {
+
+	include_once(DLEPlugins::Check(ROOT_DIR . '/engine/data/config.seting.sape.php'));
+
+	if ($config_sape['links'] == 1) {
+		$checked_links = ' checked';
+	} else {
+		$checked_links = '';
+	}
+	if ($config_sape['context'] == 1) {
+		$checked_context = ' checked';
+	} else {
+		$checked_context = '';
+	}
+	if ($config_sape['static'] == 1) {
+		$checked_static = ' checked';
+	} else {
+		$checked_static = '';
+	}
+
+	if (isset($_POST['config_sape_links'])) {
+		$config_sape_links = 1;
+	} else {
+		$config_sape_links = 0;
+	}
+	if (isset($_POST['config_sape_context'])) {
+		$config_sape_context = 1;
+	} else {
+		$config_sape_context = 0;
+	}
+	if (isset($_POST['config_sape_static'])) {
+		$config_sape_static = 1;
+	} else {
+		$config_sape_static = 0;
+	}
+
+	if (isset($_POST['config_sape_host']) && isset($_POST['config_sape_user']) && isset($config_sape_links) && isset($config_sape_context) && isset($config_sape_static)) {
+
+		$config_sape_host = $_POST['config_sape_host'];
+		$config_sape_user = $_POST['config_sape_user'];
+
+		$config_sape = <<< EOT
+<?PHP 
+
+\$config_sape = array (
+
+'host' => '{$config_sape_host}',
+'charset' => 'utf-8',
+'user' => '{$config_sape_user}',
+'links' => '{$config_sape_links}',
+'context' => '{$config_sape_context}',
+'static' => '{$config_sape_static}',
+
+);
+
+?>
+EOT;
+
+		$config_sape_file = ROOT_DIR . '/engine/data/config.seting.sape.php';
+		$writing_sape = fopen($config_sape_file, 'w');
+		if (fwrite($writing_sape, $config_sape) === FALSE) {
+			fclose($writing_sape);
+			header("HTTP/1.0 301 Moved Permanently");
+			header('Location: /' . $config['admin_path'] . '?mod=sape&saved=no');
+			die("Redirect");
+			exit;
+		} else {
+			fclose($writing_sape);
+			header("HTTP/1.0 301 Moved Permanently");
+			header('Location: /' . $config['admin_path'] . '?mod=sape&saved=yes');
+			die("Redirect");
+		}
+	}
+
+	echo <<<HTML
+<div class="content">
+	<form method="post" action="">
+		<div class="panel panel-flat">
+			<div class="panel-body">Настройки Sape</div>
+				<div class="table-responsive">
+					<table class="table table-striped">
+						<tbody>
+							<tr>
+								<td class="col-xs-6 col-sm-6 col-md-7"><h6 class="media-heading text-semibold">Домен сайта:</h6><span class="text-muted text-size-small hidden-xs">Прописывать без http://. Нужен на тот случай, если сервер неверно или в нестандартном формате возвращает переменную окружения HTTP_HOST</span></td>
+								<td class="col-xs-6 col-sm-6 col-md-5"><input type="text" class="form-control" name="config_sape_host" value="{$config_sape['host']}"></td>
+							</tr>
+							<tr>
+								<td class="col-xs-6 col-sm-6 col-md-7"><h6 class="media-heading text-semibold">Персональный код:</h6><span class="text-muted text-size-small hidden-xs">Данный код можно посмотреть в настройках площадки на сайте Sape. Он состоит из 32 латинских букв и цифр</span></td>
+								<td class="col-xs-6 col-sm-6 col-md-5"><input type="text" class="form-control" name="config_sape_user" value="{$config_sape['user']}"></td>
+							</tr>
+							<tr>
+								<td class="col-xs-6 col-sm-6 col-md-7"><h6 class="media-heading text-semibold">Обычные ссылки:</h6><span class="text-muted text-size-small hidden-xs">Если включено, то будет подключён код для отображения обычных ссылок</span></td>
+								<td class="col-xs-6 col-sm-6 col-md-5"><input class="switch" type="checkbox" name="config_sape_links" value="1"{$checked_links}></td>
+							</tr>
+							<tr>
+								<td class="col-xs-6 col-sm-6 col-md-7"><h6 class="media-heading text-semibold">Контекстные ссылки в новостях:</h6><span class="text-muted text-size-small hidden-xs">Если включено, то будет подключён код для отображения контекстных ссылок в новостях сайта. Если не используете, то рекомендуется выключить</span></td>
+								<td class="col-xs-6 col-sm-6 col-md-5"><input class="switch" type="checkbox" name="config_sape_context" value="1"{$checked_context}></td>
+							</tr>
+							<tr>
+								<td class="col-xs-6 col-sm-6 col-md-7"><h6 class="media-heading text-semibold">Контекстные ссылки на статических страницах:</h6><span class="text-muted text-size-small hidden-xs">Если включено, то будет подключён код для отображения контекстных ссылок на статических страницах сайта. Если не используете, то рекомендуется выключить</span></td>
+								<td class="col-xs-6 col-sm-6 col-md-5"><input class="switch" type="checkbox" name="config_sape_static" value="1"{$checked_static}></td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+		</div>
+		<div style="margin-bottom:30px;">
+			<button type="submit" class="btn bg-teal btn-raised position-left legitRipple"><i class="fa fa-floppy-o position-left"></i>Сохранить</button>
+		</div>
+	</form>
+</div>
+HTML;
+} elseif ($_GET['saved'] == 'yes') {
+	echo <<<HTML
+<div class="alert alert-success alert-styled-left alert-arrow-left alert-component message_box">
+	<div class="panel-body">
+		<table width="100%">
+			<tbody>
+				<tr>
+					<td class="text-center" height="80">Настройки плагина Sape успешно сохранены.</td>
+				</tr>
+			</tbody>
+		</table>
+	</div>
+	<div class="panel-footer">
+		<div class="text-center"><a class="btn btn-sm bg-teal btn-raised position-left legitRipple" href="/{$config['admin_path']}?mod=sape">Вернуться к настройкам</a></div>
+	</div>
+</div>
+HTML;
+} elseif ($_GET['saved'] == 'no') {
+	echo <<<HTML
+<div class="alert alert-warning alert-styled-left alert-arrow-left alert-component message_box">
+	<div class="panel-body">
+		<table width="100%">
+			<tbody>
+				<tr>
+					<td class="text-center" height="80">Не удалось сохранить настройки плагина Sape.</td>
+				</tr>
+			</tbody>
+		</table>
+	</div>
+	<div class="panel-footer">
+		<div class="text-center"><a class="btn btn-sm bg-teal btn-raised position-left legitRipple" href="/{$config['admin_path']}?mod=sape">Вернуться к настройкам</a></div>
+	</div>
+</div>
+HTML;
+} else {
+	echo '<div class="alert alert-warning alert-styled-left alert-arrow-left alert-component">Что-то пошло не так</div>';
+}
+
+echofooter();
+]]></replacecode>
+			<enabled>1</enabled>
+		</operation>
+	</file>
+	<file name="engine/init.php">
+		<operation action="after">
+			<searchcode><![CDATA[if( !defined( 'DATALIFEENGINE' ) ) {
+	header( "HTTP/1.1 403 Forbidden" );
+	header ( 'Location: ../' );
+	die( "Hacking attempt!" );
+}]]></searchcode>
+			<replacecode><![CDATA[include_once(DLEPlugins::Check(ROOT_DIR . '/engine/data/config.seting.sape.php'));
+if (!defined('_SAPE_USER')) {
+	define('_SAPE_USER', $config_sape['user']);
+}
+include_once(realpath($_SERVER['DOCUMENT_ROOT'] . '/' . _SAPE_USER . '/sape.php'));]]></replacecode>
+			<enabled>1</enabled>
+		</operation>
+	</file>
+	<file name="engine/modules/main.php">
+		<operation action="before">
+			<searchcode><![CDATA[$tpl->compile ( 'main' );]]></searchcode>
+			<replacecode><![CDATA[if ($config_sape['links'] == 1 && is_file($_SERVER['DOCUMENT_ROOT'] . '/' . $config_sape['user'] . '/sape.php')) {
+	$sape = new SAPE_client($config_sape);
+	$tpl->set('{sape_links}', $sape->return_links());
+} else {
+	$tpl->set('{sape_links}', '');
+}]]></replacecode>
+			<enabled>1</enabled>
+		</operation>
+	</file>
+	<file name="engine/modules/show.full.php">
+		<operation action="replace">
+			<searchcode><![CDATA[$tpl->set( '{full-story}', $row['full_story'] );]]></searchcode>
+			<replacecode><![CDATA[if ($config_sape['context'] == 1 && is_file($_SERVER['DOCUMENT_ROOT'] . '/' . $config_sape['user'] . '/sape.php')) {
+	$sape_context = new SAPE_context($config_sape);
+	$sape_text = $sape_context->replace_in_text_segment($row['full_story']);
+	$tpl->set('{full-story}', $sape_text);
+} else {
+	$tpl->set('{full-story}', $row['full_story']);
+}]]></replacecode>
+			<enabled>1</enabled>
+		</operation>
+	</file>
+	<file name="engine/modules/static.php">
+		<operation action="replace">
+			<searchcode><![CDATA[$tpl->set( '{static}', $template );]]></searchcode>
+			<replacecode><![CDATA[if ($config_sape['static'] == 1 && is_file($_SERVER['DOCUMENT_ROOT'] . '/' . $config_sape['user'] . '/sape.php')) {
+	$sape_context = new SAPE_context($config_sape);
+	$sape_text = $sape_context->replace_in_text_segment($template);
+	$tpl->set('{static}', $sape_text);
+} else {
+	$tpl->set('{static}', $template);
+}]]></replacecode>
+			<enabled>1</enabled>
+		</operation>
+	</file>
+</dleplugin>
